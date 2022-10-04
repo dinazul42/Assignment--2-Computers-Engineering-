@@ -1,0 +1,69 @@
+#include <msp430xG46x.h>    
+ ;VERSION 0 
+            ORG 1100h
+id1         DW    0,8,4,1,4,8,5,4
+id2         DW    1,8,4,9,2,6,6,7
+size        DW    8
+ParityOnes1 DS16 8
+
+
+          RSEG   CSTACK           ; defines stack segment of 80 words (default)
+          RSEG   CODE             ; ORG   0x3100 - place program in 'CODE' segment in to Flash memory
+          
+MAIN      PUSH size 
+          PUSH #id1
+          PUSH #id2 
+          PUSH #ParityOnes1
+          CALL #FUNC2  
+          jmp  $ 
+          
+FUNC2     ADD #2,SP
+          POP R5  ;PARITY1
+          POP R6  ;ID2
+          POP R7  ;ID1 
+          POP R8  ;SIZE
+          
+SETUP     CLR R10
+          CLR R11
+          CLR R12
+          ADD @R6,R10
+          JZ  CHARGING1
+          ADD @R7,R11
+          JZ CHARGING2
+MULTI     ADD R10,R12
+          SUB #1,R11
+          JNZ MULTI
+CHARGING  MOV R12,0(R5)
+          INCD R5
+          INCD R6
+          INCD R7
+          SUB #1,R8
+          JZ FINISH
+          JMP SETUP
+    
+          
+          
+CHARGING1 MOV R10,0(R5)
+          INCD R5
+          INCD R6
+          INCD R7
+          SUB #1,R8
+          JMP SETUP
+          
+CHARGING2 MOV R11,0(R5)
+          INCD R5
+          INCD R6
+          INCD R7
+          SUB #1,R8
+          JMP SETUP
+          
+
+          
+FINISH    SUB #10,SP 
+          RET                      
+;-------------------------------------------------------------------------------
+          COMMON  INTVEC                  ; Interrupt Vectors
+;-------------------------------------------------------------------------------
+          ORG     RESET_VECTOR            ; POR, ext. Reset
+          DW      MAIN
+          END
